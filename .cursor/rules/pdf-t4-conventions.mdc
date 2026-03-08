@@ -1,0 +1,10 @@
+---
+description: Consult CLAUDE.md and keep it updated for pdf-t4-pipeline-tj
+alwaysApply: true
+---
+
+# PDF T4 Pipeline Conventions
+
+When working on pdf-t4-pipeline-tj, consult **CLAUDE.md** in the project root before making changes. It documents architecture, code conventions, testing, deployment, and common change patterns. Follow its conventions unless the user explicitly requests otherwise.
+
+When making changes that affect architecture, APIs, or conventions (new endpoints, schema changes, config, deployment), update CLAUDE.md to keep it accurate.

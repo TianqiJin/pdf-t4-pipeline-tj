@@ -1,0 +1,24 @@
+[project]
+name = "pdf-t4-pipeline-tj"
+version = "0.1.0"
+description = "PDF T4 pipeline with Step Functions and Lambda"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = ["cdk.out", ".venv", "venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]

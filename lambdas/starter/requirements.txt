@@ -1,0 +1,2 @@
+# S3 event -> StartExecution
+boto3>=1.34.0
