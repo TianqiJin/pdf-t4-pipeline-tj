@@ -13,7 +13,10 @@ def _resolve_api_key() -> str | None:
     import boto3
     secret_arn = os.environ.get("OPENAI_SECRET_ARN")
     if secret_arn:
-        logger.info("Resolving OpenAI API key from Secrets Manager", extra={"source": "OPENAI_SECRET_ARN"})
+        logger.info(
+            "Resolving OpenAI API key from Secrets Manager",
+            extra={"source": "OPENAI_SECRET_ARN"},
+        )
         sm = boto3.client("secretsmanager")
         r = sm.get_secret_value(SecretId=secret_arn)
         return r.get("SecretString", "")
@@ -27,7 +30,10 @@ def _resolve_api_key() -> str | None:
         if lower.startswith("arn:aws:ssm:"):
             # ARN: arn:aws:ssm:region:account:parameter/name -> extract name
             idx = lower.find("parameter/")
-            param_name = param_name[idx + 10:] if idx >= 0 else param_name.split(":", 5)[-1].lstrip("/")
+            if idx >= 0:
+                param_name = param_name[idx + 10:]
+            else:
+                param_name = param_name.split(":", 5)[-1].lstrip("/")
         elif lower.startswith("ssm") or lower.startswith("/ssm"):
             # Strip ssm:, ssm/, /ssm/ (AWS rejects prefix "ssm")
             param_name = param_name.lstrip("/")
@@ -94,7 +100,10 @@ def extract_t4_from_pdf(pdf_bytes: bytes, instructions: str, filename: str = "pa
                 "role": "user",
                 "content": [
                     {"type": "input_file", "file_id": file_id},
-                    {"type": "input_text", "text": "Extract T4 or T4A slip data from this PDF. Return JSON only."},
+                    {
+                        "type": "input_text",
+                        "text": "Extract T4 or T4A slip data from this PDF. Return JSON only.",
+                    },
                 ],
             },
         ],

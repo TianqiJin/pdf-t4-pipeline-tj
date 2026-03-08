@@ -6,11 +6,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from parse_t4.prompt import T4_T4A_EXTRACTION_INSTRUCTIONS
 from shared.logging_utils import get_json_logger
 from shared.openai_client import extract_t4_from_pdf
 from shared.s3_utils import get_object_bytes, put_object_json
-
-from parse_t4.prompt import T4_T4A_EXTRACTION_INSTRUCTIONS
 
 MAX_PARSE_ATTEMPTS = 3  # Try up to 3 times per page before giving up
 
@@ -55,7 +54,10 @@ def _parse_t4_page(pdf_bytes: bytes, page_index: int) -> tuple[bool, str, str, d
     box12_raw = str(box12).strip() if box12 is not None and box12 != "" else ""
     box13_raw = str(box13).strip() if box13 is not None and box13 != "" else ""
     if not box12_raw and not box13_raw:
-        return False, "", "", None, "Box 12 and Box 13 both missing; need at least one for encryption"
+        return (
+            False, "", "", None,
+            "Box 12 and Box 13 both missing; need at least one for encryption",
+        )
     return True, box12_raw, box13_raw, obj, ""
 
 
@@ -74,13 +76,19 @@ def handler(event: dict, context: object) -> dict:
     pdf_bytes = get_object_bytes(inp["splitBucket"], split_key)
     parse_ok, box12_raw, box13_raw, success_data, failure_reason = False, "", "", None, ""
     for attempt in range(1, MAX_PARSE_ATTEMPTS + 1):
-        parse_ok, box12_raw, box13_raw, success_data, failure_reason = _parse_t4_page(pdf_bytes, page_index)
+        parse_ok, box12_raw, box13_raw, success_data, failure_reason = (
+            _parse_t4_page(pdf_bytes, page_index)
+        )
         if parse_ok:
             break
         if attempt < MAX_PARSE_ATTEMPTS:
             logger.info(
                 "Parse failed, retrying",
-                extra={"pageIndex": page_index, "attempt": attempt, "maxAttempts": MAX_PARSE_ATTEMPTS},
+                extra={
+                    "pageIndex": page_index,
+                    "attempt": attempt,
+                    "maxAttempts": MAX_PARSE_ATTEMPTS,
+                },
             )
 
     if parse_ok and success_data is not None:

@@ -18,6 +18,16 @@ AWS Step Functions pipeline that splits multi-page PDFs, parses Canada T4 and T4
 
 **Optional trigger:** S3 ObjectCreated on `incoming/` → `starter` Lambda → StartExecution (no PDF processing).
 
+**Individual state machines** (single-step, for per-Lambda testing/invocation):
+
+| State Machine | Lambda | Input (per CONTRACT.md) |
+|---------------|--------|------------------------|
+| SplitOnly | `split_pdf` | source, buckets, prefixes |
+| ParseOnly | `parse_t4` | jobId, buckets, prefixes, splitBucket, page |
+| EncryptOnly | `encrypt_pdf` | jobId, buckets, prefixes, pageIndex, splitKey, box12Raw, box13Raw |
+
+These reuse the same `StateMachineRole` and Lambda ARNs as the full pipeline.
+
 ---
 
 ## Directory Structure
@@ -111,6 +121,7 @@ All payload shapes are in **CONTRACT.md**. Lambdas must return exactly the top-l
 
 - **test_contract_outputs.py:** Contract shape checks for split, parse, encrypt, finalize, cleanup, starter.
 - **test_password_rules.py:** Password derivation (all digits, digits-before-RT, invalid cases).
+- **test_individual_state_machines.py:** CDK assertions for SplitOnly, ParseOnly, EncryptOnly state machines and their stack outputs.
 - Tests patch S3/OpenAI; `sys.path` includes `lambdas/`.
 
 Run: `pytest` (from repo root). Focus on one Lambda: `pytest -k "split_pdf"` etc.
@@ -130,7 +141,7 @@ With OpenAI from SSM:
 cdk deploy -c openai_param_name=/pdf-t4/openai-api-key
 ```
 
-Outputs: SourceBucketName, SplitBucketName, ProtectedBucketName, ResultsBucketName, StateMachineArn.
+Outputs: SourceBucketName, SplitBucketName, ProtectedBucketName, ResultsBucketName, StateMachineArn, SplitOnlyStateMachineArn, ParseOnlyStateMachineArn, EncryptOnlyStateMachineArn.
 
 ---
 
@@ -148,5 +159,6 @@ Uploads to `incoming/`, starts execution manually (or use S3 trigger), waits for
 
 - `SourceBucketName`, `SplitBucketName`, `ProtectedBucketName`, `ResultsBucketName`
 - `StateMachineArn`
+- `SplitOnlyStateMachineArn`, `ParseOnlyStateMachineArn`, `EncryptOnlyStateMachineArn`
 
 Query via: `aws cloudformation describe-stacks --stack-name PdfT4PipelineStack --query 'Stacks[0].Outputs'`

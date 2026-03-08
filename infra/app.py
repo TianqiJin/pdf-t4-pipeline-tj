@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """CDK app entry point for PDF T4 pipeline."""
 import aws_cdk as cdk
-
 from stacks.pipeline_stack import PipelineStack
 
 app = cdk.App()

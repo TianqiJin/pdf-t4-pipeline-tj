@@ -200,6 +200,53 @@ class PipelineStack(cdk.Stack):
             definition_string=asl_str,
         )
 
+        # --- Individual state machines (single-step, reuse same role) ---
+
+        split_only_asl = (
+            '{"Comment":"SplitOnly – invoke split_pdf Lambda",'
+            '"StartAt":"SplitPdf","States":{"SplitPdf":{"Type":"Task",'
+            '"Resource":"arn:aws:states:::lambda:invoke",'
+            '"Parameters":{"FunctionName":"' + split_lambda.function_arn + '",'
+            '"Payload.$":"$"},'
+            '"OutputPath":"$.Payload","End":true}}}'
+        )
+        split_only_sm = sfn.CfnStateMachine(
+            self,
+            "SplitOnlyStateMachine",
+            role_arn=sfn_role.role_arn,
+            definition_string=split_only_asl,
+        )
+
+        parse_only_asl = (
+            '{"Comment":"ParseOnly – invoke parse_t4 Lambda",'
+            '"StartAt":"ParseT4","States":{"ParseT4":{"Type":"Task",'
+            '"Resource":"arn:aws:states:::lambda:invoke",'
+            '"Parameters":{"FunctionName":"' + parse_lambda.function_arn + '",'
+            '"Payload.$":"$"},'
+            '"OutputPath":"$.Payload","End":true}}}'
+        )
+        parse_only_sm = sfn.CfnStateMachine(
+            self,
+            "ParseOnlyStateMachine",
+            role_arn=sfn_role.role_arn,
+            definition_string=parse_only_asl,
+        )
+
+        encrypt_only_asl = (
+            '{"Comment":"EncryptOnly – invoke encrypt_pdf Lambda",'
+            '"StartAt":"EncryptPdf","States":{"EncryptPdf":{"Type":"Task",'
+            '"Resource":"arn:aws:states:::lambda:invoke",'
+            '"Parameters":{"FunctionName":"' + encrypt_lambda.function_arn + '",'
+            '"Payload.$":"$"},'
+            '"OutputPath":"$.Payload","End":true}}}'
+        )
+        encrypt_only_sm = sfn.CfnStateMachine(
+            self,
+            "EncryptOnlyStateMachine",
+            role_arn=sfn_role.role_arn,
+            definition_string=encrypt_only_asl,
+        )
+
         # Starter: S3 incoming/ -> StartExecution
         starter_lambda.add_environment("STATE_MACHINE_ARN", state_machine.attr_arn)
         starter_lambda.add_environment("SPLIT_BUCKET", split_bucket.bucket_name)
@@ -218,8 +265,43 @@ class PipelineStack(cdk.Stack):
         )
 
         # Outputs
-        cdk.CfnOutput(self, "SourceBucketName", value=source_bucket.bucket_name, export_name=f"{self.stack_name}-SourceBucket")
-        cdk.CfnOutput(self, "SplitBucketName", value=split_bucket.bucket_name, export_name=f"{self.stack_name}-SplitBucket")
-        cdk.CfnOutput(self, "ProtectedBucketName", value=protected_bucket.bucket_name, export_name=f"{self.stack_name}-ProtectedBucket")
-        cdk.CfnOutput(self, "ResultsBucketName", value=results_bucket.bucket_name, export_name=f"{self.stack_name}-ResultsBucket")
-        cdk.CfnOutput(self, "StateMachineArn", value=state_machine.attr_arn, export_name=f"{self.stack_name}-StateMachineArn")
+        cdk.CfnOutput(
+            self, "SourceBucketName",
+            value=source_bucket.bucket_name,
+            export_name=f"{self.stack_name}-SourceBucket",
+        )
+        cdk.CfnOutput(
+            self, "SplitBucketName",
+            value=split_bucket.bucket_name,
+            export_name=f"{self.stack_name}-SplitBucket",
+        )
+        cdk.CfnOutput(
+            self, "ProtectedBucketName",
+            value=protected_bucket.bucket_name,
+            export_name=f"{self.stack_name}-ProtectedBucket",
+        )
+        cdk.CfnOutput(
+            self, "ResultsBucketName",
+            value=results_bucket.bucket_name,
+            export_name=f"{self.stack_name}-ResultsBucket",
+        )
+        cdk.CfnOutput(
+            self, "StateMachineArn",
+            value=state_machine.attr_arn,
+            export_name=f"{self.stack_name}-StateMachineArn",
+        )
+        cdk.CfnOutput(
+            self, "SplitOnlyStateMachineArn",
+            value=split_only_sm.attr_arn,
+            export_name=f"{self.stack_name}-SplitOnlySM",
+        )
+        cdk.CfnOutput(
+            self, "ParseOnlyStateMachineArn",
+            value=parse_only_sm.attr_arn,
+            export_name=f"{self.stack_name}-ParseOnlySM",
+        )
+        cdk.CfnOutput(
+            self, "EncryptOnlyStateMachineArn",
+            value=encrypt_only_sm.attr_arn,
+            export_name=f"{self.stack_name}-EncryptOnlySM",
+        )

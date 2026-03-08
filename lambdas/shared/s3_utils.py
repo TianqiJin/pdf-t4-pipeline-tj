@@ -1,6 +1,7 @@
 """S3 utility functions for PDF T4 pipeline."""
-import boto3
 import json
+
+import boto3
 
 _s3 = boto3.client("s3")
 

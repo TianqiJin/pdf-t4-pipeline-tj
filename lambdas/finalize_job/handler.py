@@ -36,7 +36,10 @@ def handler(event: dict, context: object) -> dict:
         stage = _stage_for_outcome(o)
         reason = o.get("failureReason")
         if stage is None:
-            succeeded.append({"pageIndex": o["pageIndex"], "protectedKey": o.get("protectedKey", "")})
+            succeeded.append({
+                "pageIndex": o["pageIndex"],
+                "protectedKey": o.get("protectedKey", ""),
+            })
         else:
             failed.append({"pageIndex": o["pageIndex"], "stage": stage, "reason": reason})
 

@@ -3,7 +3,10 @@ import re
 
 
 def _derive_from_value(value: str, box_label: str) -> tuple[bool, str]:
-    """Derive password from a single box value. Rules: all digits OK; contains RT -> digits before RT."""
+    """Derive password from a single box value.
+
+    Rules: all digits OK; contains RT -> digits before RT.
+    """
     trimmed = (value or "").strip()
     if not trimmed:
         return False, f"{box_label} invalid: empty"

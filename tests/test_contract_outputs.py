@@ -3,8 +3,6 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lambdas"))
 
 
@@ -16,7 +14,10 @@ def _exact_keys(expected: set[str], got: dict) -> None:
 
 
 SPLIT_PDF_KEYS = {"jobId", "source", "buckets", "prefixes", "split", "pages", "pageCount"}
-PARSE_T4_KEYS = {"pageIndex", "splitKey", "parseOk", "box12Raw", "box13Raw", "parseResultKey", "failureReason"}
+PARSE_T4_KEYS = {
+    "pageIndex", "splitKey", "parseOk", "box12Raw",
+    "box13Raw", "parseResultKey", "failureReason",
+}
 ENCRYPT_PDF_KEYS = {"pageIndex", "encryptOk", "protectedKey", "encryptResultKey", "failureReason"}
 FINALIZE_KEYS = {"jobId", "summaryKey", "succeededCount", "failedCount"}
 CLEANUP_KEYS = {"jobId", "cleaned", "deletedCount"}
@@ -25,8 +26,9 @@ CLEANUP_KEYS = {"jobId", "cleaned", "deletedCount"}
 @patch("split_pdf.handler.get_object_bytes")
 @patch("split_pdf.handler.put_object_bytes")
 def test_split_pdf_output_shape(mock_put, mock_get):
-    from pypdf import PdfReader, PdfWriter
     from io import BytesIO
+
+    from pypdf import PdfWriter
 
     mock_get.return_value = b""
     writer = PdfWriter()
@@ -53,8 +55,9 @@ def test_split_pdf_output_shape(mock_put, mock_get):
 @patch("split_pdf.handler.put_object_bytes")
 def test_split_pdf_two_page(mock_put, mock_get):
     """Split a 2-page PDF into two page PDFs."""
-    from pypdf import PdfReader, PdfWriter
     from io import BytesIO
+
+    from pypdf import PdfWriter
 
     writer = PdfWriter()
     writer.add_blank_page(width=72, height=72)
@@ -109,7 +112,11 @@ def test_parse_t4_output_shape_failure(mock_put, mock_get, mock_parse):
 def test_parse_t4_t4a_box012_success(mock_put, mock_get, mock_parse):
     """T4A slips use Box 012; handler correctly processes and outputs slipType."""
     mock_get.return_value = b"fake pdf"
-    mock_parse.return_value = (True, "123456789", "", {"slipType": "T4A", "year": 2024, "boxes": {"012": "123456789"}}, "")
+    mock_parse.return_value = (
+        True, "123456789", "",
+        {"slipType": "T4A", "year": 2024, "boxes": {"012": "123456789"}},
+        "",
+    )
 
     import parse_t4.handler as m
 
@@ -136,17 +143,26 @@ def test_parse_t4_page_accepts_box12_or_012(mock_extract):
     import parse_t4.handler as m
 
     # T4: box "12"
-    mock_extract.return_value = '{"isAbleToGetContent":true,"slipType":"T4","year":2024,"boxes":{"12":"111222333"},"codes":{}}'
+    mock_extract.return_value = (
+        '{"isAbleToGetContent":true,"slipType":"T4",'
+        '"year":2024,"boxes":{"12":"111222333"},"codes":{}}'
+    )
     ok, box12, box13, _, _ = m._parse_t4_page(b"pdf", 0)
     assert ok is True and box12 == "111222333" and box13 == ""
 
     # T4A: box "012"
-    mock_extract.return_value = '{"isAbleToGetContent":true,"slipType":"T4A","year":2024,"boxes":{"012":"444555666"},"codes":{}}'
+    mock_extract.return_value = (
+        '{"isAbleToGetContent":true,"slipType":"T4A",'
+        '"year":2024,"boxes":{"012":"444555666"},"codes":{}}'
+    )
     ok, box12, box13, _, _ = m._parse_t4_page(b"pdf", 0)
     assert ok is True and box12 == "444555666" and box13 == ""
 
     # Fallback: box 12 empty, box 13 has value
-    mock_extract.return_value = '{"isAbleToGetContent":true,"slipType":"T4A","year":2024,"boxes":{"013":"777888999RT"},"codes":{}}'
+    mock_extract.return_value = (
+        '{"isAbleToGetContent":true,"slipType":"T4A",'
+        '"year":2024,"boxes":{"013":"777888999RT"},"codes":{}}'
+    )
     ok, box12, box13, _, _ = m._parse_t4_page(b"pdf", 0)
     assert ok is True and box12 == "" and box13 == "777888999RT"
 
@@ -155,8 +171,9 @@ def test_parse_t4_page_accepts_box12_or_012(mock_extract):
 @patch("encrypt_pdf.handler.put_object_bytes")
 @patch("encrypt_pdf.handler.put_object_json")
 def test_encrypt_pdf_output_shape_success(mock_put_json, mock_put_bytes, mock_get):
-    from pypdf import PdfWriter
     from io import BytesIO
+
+    from pypdf import PdfWriter
 
     writer = PdfWriter()
     writer.add_blank_page(width=72, height=72)
@@ -205,6 +222,7 @@ def test_encrypt_pdf_output_shape_failure(mock_put):
 def test_encrypt_pdf_encrypted_requires_password(mock_put_json, mock_put_bytes, mock_get):
     """Encrypted PDF requires correct password to decrypt."""
     from io import BytesIO
+
     from pypdf import PdfReader, PdfWriter
 
     writer = PdfWriter()
@@ -242,6 +260,7 @@ def test_encrypt_pdf_encrypted_requires_password(mock_put_json, mock_put_bytes, 
 def test_encrypt_pdf_box13_fallback(mock_put_json, mock_put_bytes, mock_get):
     """Encrypt uses Box13 when Box12 empty; digits before RT from Box13."""
     from io import BytesIO
+
     from pypdf import PdfReader, PdfWriter
 
     writer = PdfWriter()
@@ -306,9 +325,12 @@ def test_finalize_job_output_shape(mock_put):
 def test_starter_builds_sfn_input_and_starts_execution(mock_get_client):
     """Starter builds SFN input from S3 event + env, calls StartExecution. No PDF processing."""
     mock_client = mock_get_client.return_value
-    mock_client.start_execution.return_value = {"executionArn": "arn:aws:states:us-east-1:123:execution:sm:run-1"}
+    mock_client.start_execution.return_value = {
+        "executionArn": "arn:aws:states:us-east-1:123:execution:sm:run-1",
+    }
 
     import os
+
     import starter.handler as m
 
     with patch.dict(os.environ, {
